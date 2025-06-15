@@ -117,4 +117,20 @@ abstract class AppleFoundationFlutterPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError('generateSuggestions() has not been implemented.');
   }
+
+  Stream<String> generateTextStream(
+    String prompt, {
+    String? sessionId,
+    int? maxTokens,
+    double? temperature,
+    double? topP,
+  }) {
+    throw UnimplementedError('generateTextStream() has not been implemented.');
+  }
+
+  Stream<String> getStructuredDataStream(String prompt, {String? sessionId}) {
+    throw UnimplementedError(
+      'getStructuredDataStream() has not been implemented.',
+    );
+  }
 }

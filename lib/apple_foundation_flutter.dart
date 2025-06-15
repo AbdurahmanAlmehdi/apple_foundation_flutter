@@ -126,4 +126,27 @@ class AppleFoundationFlutter {
       maxSuggestions: maxSuggestions,
     );
   }
+
+  Stream<String> generateTextStream(
+    String prompt, {
+    String? sessionId,
+    int? maxTokens,
+    double? temperature,
+    double? topP,
+  }) {
+    return AppleFoundationFlutterPlatform.instance.generateTextStream(
+      prompt,
+      sessionId: sessionId,
+      maxTokens: maxTokens,
+      temperature: temperature,
+      topP: topP,
+    );
+  }
+
+  Stream<String> getStructuredDataStream(String prompt, {String? sessionId}) {
+    return AppleFoundationFlutterPlatform.instance.getStructuredDataStream(
+      prompt,
+      sessionId: sessionId,
+    );
+  }
 }

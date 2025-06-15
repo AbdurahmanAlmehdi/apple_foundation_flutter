@@ -19,6 +19,9 @@ class MethodChannelAppleFoundationFlutter
   @visibleForTesting
   final methodChannel = const MethodChannel('apple_foundation_flutter');
 
+  @visibleForTesting
+  final streamChannel = const EventChannel('apple_foundation_flutter_stream');
+
   /// Default timeout for method channel calls
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
@@ -593,5 +596,40 @@ class MethodChannelAppleFoundationFlutter
         error: error,
       );
     }
+  }
+
+  @override
+  Stream<String> generateTextStream(
+    String prompt, {
+    String? sessionId,
+    int? maxTokens,
+    double? temperature,
+    double? topP,
+  }) {
+    final args = <String, dynamic>{
+      'prompt': prompt,
+      'dataType': 'text',
+      if (sessionId != null) 'sessionId': sessionId,
+      if (maxTokens != null) 'maxTokens': maxTokens,
+      if (temperature != null) 'temperature': temperature,
+      if (topP != null) 'topP': topP,
+    };
+
+    return streamChannel
+        .receiveBroadcastStream(args)
+        .map((event) => event as String);
+  }
+
+  @override
+  Stream<String> getStructuredDataStream(String prompt, {String? sessionId}) {
+    final args = <String, dynamic>{
+      'prompt': prompt,
+      'dataType': 'json',
+      if (sessionId != null) 'sessionId': sessionId,
+    };
+
+    return streamChannel
+        .receiveBroadcastStream(args)
+        .map((event) => event as String);
   }
 }

@@ -11,7 +11,7 @@ A Flutter plugin that provides access to Apple's Foundation Models framework for
 
 ## Requirements
 
-- iOS 18.0 or higher
+- iOS 26.0 or higher
 - Xcode 16.0 or higher
 - Swift 5.0 or higher
 - Flutter 3.0 or higher
@@ -31,15 +31,6 @@ Then run:
 flutter pub get
 ```
 
-## Platform Setup
-
-### iOS Configuration
-
-The plugin automatically configures the necessary settings, but ensure your iOS deployment target is set to 18.0 or higher in your `ios/Podfile`:
-
-```ruby
-platform :ios, '18.0'
-```
 
 ## Usage
 

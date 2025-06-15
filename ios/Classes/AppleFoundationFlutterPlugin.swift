@@ -39,6 +39,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   private var store: Any?
   private lazy var channelName = "apple_foundation_flutter"
   private var cachedAvailability: FlutterError?
+  private var streamHandler: StreamHandler?
 
   override init() {
     super.init()
@@ -53,6 +54,12 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
       binaryMessenger: registrar.messenger())
     let instance = AppleFoundationFlutterPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+
+    let streamChannel = FlutterEventChannel(
+      name: "apple_foundation_flutter_stream", binaryMessenger: registrar.messenger())
+    let streamHandler = StreamHandler(plugin: instance)
+    instance.streamHandler = streamHandler
+    streamChannel.setStreamHandler(streamHandler)
   }
 
   deinit {
@@ -61,7 +68,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
     }
   }
 
-  private func checkAvailability() -> FlutterError? {
+  public func checkAvailability() -> FlutterError? {
     if let cached = cachedAvailability { return cached }
 
     #if os(iOS)
@@ -106,7 +113,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   private func generateSessionID() -> String { UUID().uuidString }
 
   @available(iOS 26.0, *)
-  private func session(for id: String?, instructions: String? = nil) async -> LanguageModelSession {
+  public func session(for id: String?, instructions: String? = nil) async -> LanguageModelSession {
     if let id = id, let existing = await (self.store as? SessionStore)?[id] {
       return existing
     }
@@ -118,7 +125,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   }
 
   @available(iOS 26.0, *)
-  private func options(from args: [String: Any]) -> GenerationOptions? {
+  public func options(from args: [String: Any]) -> GenerationOptions? {
     var opts = GenerationOptions()
     if let max = args["maxTokens"] as? Int { opts.maximumResponseTokens = max }
     if let temp = args["temperature"] as? Double { opts.temperature = temp }
@@ -132,7 +139,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
     Task { await MainActor.run { result(value) } }
   }
 
-  private func complete(_ result: @escaping FlutterResult, error: Error) {
+  private func complete(_ result: @escaping FlutterResult, error: FlutterError) {
     let flutterError: FlutterError
     if #available(iOS 26.0, *), let genError = error as? LanguageModelSession.GenerationError {
       flutterError = FlutterError(
@@ -140,9 +147,9 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
         details: genError.errorDescription)
     } else {
       flutterError =
-        error as? FlutterError
+        error
         ?? FlutterError(
-          code: "UNKNOWN_ERROR", message: error.localizedDescription, details: nil)
+          code: "UNKNOWN_ERROR", message: error.description, details: nil)
     }
     Task { await MainActor.run { result(flutterError) } }
   }
@@ -244,9 +251,9 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   private func getCapabilities(_ result: @escaping FlutterResult) {
     let model = SystemLanguageModel.default
     let caps: [String: Any] = [
-      "maxInputTokens": 8192, 
+      "maxInputTokens": 8192,
       "maxOutputTokens": 4096,
-      "supportedLanguages": model.supportedLanguages.map { $0.identifier },
+      "supportedLanguages": model.supportedLanguages.map { $0.languageCode },
       "supportsStreaming": true,
       "supportsToolCalling": true,
       "version": "26.0",
@@ -507,7 +514,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
         let raw = try await session.respond(to: prompt, options: opts)
         let output: Any = postProcess?(raw.content) ?? raw.content
         complete(result, with: output)
-      } catch { complete(result, error: error) }
+      } catch { complete(result, error: FlutterError(code: "RUN_ERROR", message: "Fail to run prompt", details: error.localizedDescription)) }
     }
   }
 
@@ -522,7 +529,83 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   }
 }
 
-// Only define this extension if the FoundationModels framework is available
+@available(iOS 26.0, *)
+class StreamHandler: NSObject, FlutterStreamHandler {
+  private weak var plugin: AppleFoundationFlutterPlugin?
+  private var streamingTask: Task<Void, Never>?
+
+  init(plugin: AppleFoundationFlutterPlugin) {
+    self.plugin = plugin
+  }
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink)
+    -> FlutterError?
+  {
+    guard let plugin = self.plugin else {
+      return FlutterError(
+        code: "PLUGIN_DEALLOCATED", message: "The plugin instance was deallocated.", details: nil)
+    }
+
+    if let error = plugin.checkAvailability() {
+      return error
+    }
+
+    guard let args = arguments as? [String: Any],
+      let promptText = args["prompt"] as? String
+    else {
+      return FlutterError(
+        code: "INVALID_ARGUMENTS",
+        message: "Stream arguments must be a map with a 'prompt' string.", details: nil)
+    }
+
+    let finalPrompt: String
+    if let dataType = args["dataType"] as? String, dataType == "json" {
+      finalPrompt = """
+        Your task is to respond to the user's request by providing the information as a single, raw, valid JSON object.
+        Do not wrap the JSON in markdown code blocks like ```json.
+        Do not add any explanatory text before or after the JSON object.
+        The entire response must be only the JSON object itself.
+
+        User Request: "\(promptText)"
+
+        JSON Output:
+        """
+    } else {
+      finalPrompt = promptText
+    }
+
+    streamingTask = Task {
+      do {
+        let session = await plugin.session(for: args["sessionId"] as? String)
+        let opts = plugin.options(from: args) ?? GenerationOptions()
+
+        let stream = session.streamResponse(to: Prompt(finalPrompt), options: opts)
+
+        for try await chunk in stream {
+          guard !Task.isCancelled else { break }
+          await MainActor.run { events(chunk) }
+        }
+      } catch {
+        if !(error is CancellationError) {
+          let flutterError = FlutterError(
+            code: "STREAM_GENERATION_ERROR", message: error.localizedDescription, details: nil)
+          await MainActor.run { events(flutterError) }
+        }
+      }
+
+      await MainActor.run { events(FlutterEndOfEventStream) }
+    }
+
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    streamingTask?.cancel()
+    streamingTask = nil
+    return nil
+  }
+}
+
 #if canImport(FoundationModels)
   @available(iOS 26.0, *)
   extension SystemLanguageModel.Availability.UnavailableReason {
