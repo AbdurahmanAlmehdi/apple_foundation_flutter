@@ -9,11 +9,6 @@ import 'package:flutter/services.dart';
 
 import 'apple_foundation_flutter_platform_interface.dart';
 
-/// Method channel implementation for Apple Foundation Flutter plugin
-///
-/// This class provides access to Apple's Foundation AI/ML capabilities
-/// through Flutter method channels, enabling cross-platform AI operations
-/// on iOS devices with Apple Intelligence support.
 class MethodChannelAppleFoundationFlutter
     extends AppleFoundationFlutterPlatform {
   @visibleForTesting
@@ -22,10 +17,8 @@ class MethodChannelAppleFoundationFlutter
   @visibleForTesting
   final streamChannel = const EventChannel('apple_foundation_flutter_stream');
 
-  /// Default timeout for method channel calls
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
-  /// Maximum number of retry attempts for failed operations
   static const int _maxRetryAttempts = 3;
 
   @override

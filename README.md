@@ -1,20 +1,24 @@
 # Apple Foundation Flutter
 
-A Flutter plugin that provides access to Apple's Foundation Models framework for iOS 18.0 and above. This plugin enables Flutter apps to integrate with Apple's on-device language models for text generation and structured data generation.
+A Flutter plugin that provides access to Apple's on-device Foundation Models framework, available on iOS 18.0 and above. This plugin allows you to integrate Apple Intelligence features directly into your Flutter applications, offering powerful, private, and efficient AI capabilities.
 
 ## Features
 
-- **Streaming Text Generation**: Get real-time streaming responses from Apple's Foundation Models
-- **Structured Data Generation**: Generate structured data using guided generation
-- **On-Device Processing**: All processing happens locally on the device using Apple's Foundation Models framework
-- **Privacy-First**: No data is sent to external servers
+- **On-Device & Private**: All processing happens locally, ensuring user data remains private.
+- **Text Generation**: Create rich, context-aware text content.
+- **Streaming Support**: Stream text and structured JSON responses in real-time for a dynamic UX.
+- **Structured Data**: Generate structured data (e.g., JSON) from natural language prompts.
+- **Session Management**: Maintain conversation history and context with sessions.
+- **Advanced Control**: Fine-tune model output with parameters like temperature, token limits, and more.
+- **Helper Functions**: Includes specialized methods for summarization, classification, alternative generation, and information extraction.
+- **Availability Checks**: Gracefully check if Apple Intelligence is available on the user's device.
 
 ## Requirements
 
-- iOS 26.0 or higher
-- Xcode 16.0 or higher
-- Swift 5.0 or higher
-- Flutter 3.0 or higher
+- **Platform**: iOS 26.0+
+- **IDE**: Xcode 16.0+
+- **Language**: Swift 5.10+
+- **Flutter**: 3.0+
 
 ## Installation
 
@@ -31,208 +35,165 @@ Then run:
 flutter pub get
 ```
 
+Finally, run `flutter pub get`.
 
 ## Usage
 
-### Import the Plugin
+### 1. Initialize the Plugin
 
 ```dart
 import 'package:apple_foundation_flutter/apple_foundation_flutter.dart';
+
+final _plugin = AppleFoundationFlutter();
 ```
 
-### Initialize the Plugin
+### 2. Check for Availability
+
+Before using any model features, always check if they are available on the device.
 
 ```dart
-final appleFoundationFlutter = AppleFoundationFlutter();
-```
-
-### Streaming Text Generation
-
-Generate text with real-time streaming responses:
-
-```dart
-// Stream responses from the Foundation Model
-appleFoundationFlutter
-    .ask('Tell me a story about a brave knight.')
-    .listen((chunk) {
-      print('Received chunk: $chunk');
-      // Update your UI with each chunk as it arrives
-    });
-```
-
-### Structured Data Generation
-
-Generate structured data using guided generation:
-
-```dart
-try {
-  final structuredData = await appleFoundationFlutter
-      .getStructuredData('Generate a user profile for John Doe, age 30');
-
-  print('Name: ${structuredData['name']}');
-  print('Age: ${structuredData['value']}');
-  print('Description: ${structuredData['description']}');
-} catch (error) {
-  print('Error generating structured data: $error');
+final bool isAvailable = await _plugin.isAvailable();
+if (!isAvailable) {
+  // Handle cases where Apple Intelligence is not available
+  final status = await _plugin.getAvailabilityStatus();
+  print('Apple Intelligence is not available: ${status['reason']}');
+  return;
 }
 ```
 
-### Complete Example
+### 3. Generate Text (Streaming)
+
+For dynamic and responsive UI, stream text generation.
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:apple_foundation_flutter/apple_foundation_flutter.dart';
+String streamedResponse = '';
+final textStream = _plugin.generateTextStream(
+  'Tell me a short story about a brave knight.',
+);
 
-class FoundationModelsDemo extends StatefulWidget {
-  @override
-  _FoundationModelsDemoState createState() => _FoundationModelsDemoState();
+await for (final chunk in textStream) {
+  setState(() {
+    streamedResponse += chunk;
+  });
 }
+```
 
-class _FoundationModelsDemoState extends State<FoundationModelsDemo> {
-  final _plugin = AppleFoundationFlutter();
-  String _response = '';
-  Map<String, dynamic>? _structuredData;
+### 4. Generate Structured Data (Streaming)
 
-  void _getStreamingResponse() {
-    _plugin.ask('Tell me a story about a brave knight.').listen((data) {
-      setState(() {
-        _response += data;
-      });
-    });
-  }
+You can also stream structured data, which is useful for receiving a complete JSON object once it's fully generated.
 
-  void _getStructuredData() async {
-    try {
-      final data = await _plugin.getStructuredData(
-          'Generate a user profile for a person named John Doe who is 30 years old.');
-      setState(() {
-        _structuredData = data;
-      });
-    } catch (error) {
-      print('Error: $error');
-    }
-  }
+```dart
+String rawJson = '';
+final jsonStream = _plugin.getStructuredDataStream(
+  'Create a user profile for Jane Doe, a 32-year-old astronaut.',
+);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Foundation Models Demo')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ElevatedButton(
-              onPressed: _getStreamingResponse,
-              child: Text('Get Streaming Response'),
-            ),
-            SizedBox(height: 16),
-            Text('Response: $_response'),
-            SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _getStructuredData,
-              child: Text('Get Structured Data'),
-            ),
-            SizedBox(height: 16),
-            if (_structuredData != null)
-              Text('Structured Data: $_structuredData'),
-          ],
-        ),
-      ),
-    );
-  }
+await for (final chunk in jsonStream) {
+  rawJson += chunk;
 }
+// Once the stream is complete, parse the JSON
+final data = json.decode(rawJson);
+print(data); // { "name": "Jane Doe", "age": 32, "occupation": "astronaut" }
+```
+
+### 5. Using Sessions for Context
+
+Sessions allow the model to remember previous parts of a conversation.
+
+```dart
+// Start a new session with system instructions
+final sessionId = await _plugin.openSession(
+  'You are a helpful and friendly assistant.',
+);
+
+// Use the session ID in subsequent calls
+final response = await _plugin.generateText(
+  'What was the first thing I asked you?',
+  sessionId: sessionId,
+);
+
+// Remember to close the session when done
+await _plugin.closeSession(sessionId);
+
 ```
 
 ## API Reference
 
-### Methods
+### Core Methods
 
-#### `ask(String prompt)`
+- **`Future<bool> isAvailable()`**: Checks if Apple Intelligence is supported and enabled.
+- **`Future<Map<String, dynamic>> getAvailabilityStatus()`**: Gets a detailed status, including a reason if unavailable.
+- **`Future<Map<String, dynamic>> getModelCapabilities()`**: Returns a map of the current model's capabilities.
+- **`Future<String?> getPlatformVersion()`**: Gets the underlying iOS version.
 
-Streams responses from Apple's Foundation Model.
+### Session Management
 
-- **Parameters**:
-  - `prompt`: The input text prompt
-- **Returns**: `Stream<String>` - Stream of generated text chunks
-- **Throws**: `PlatformException` if the operation fails
+- **`Future<String> openSession(String instructions)`**: Creates a new session with system-level instructions and returns a unique session ID.
+- **`Future<void> closeSession(String sessionId)`**: Closes and cleans up a session.
 
-#### `getStructuredData(String prompt)`
+### Generation Methods (Single Response)
 
-Generates structured data from Apple's Foundation Model using guided generation.
+These methods return a complete response after generation is finished.
 
-- **Parameters**:
-  - `prompt`: The input text prompt
-- **Returns**: `Future<Map<String, dynamic>>` - Structured data as a Map
-- **Throws**: `PlatformException` if the operation fails
+- **`Future<String?> ask(String prompt, {String? sessionId})`**: A simple method for a single question-and-answer interaction.
+- **`Future<String?> generateText(String prompt, {String? sessionId, int? maxTokens, double? temperature, double? topP})`**: Generates text with advanced options.
+- **`Future<Map<String, dynamic>> getStructuredData(String prompt, {String? sessionId})`**: Generates a JSON object from a prompt.
+- **`Future<List<String>> getListOfString(String prompt, {String? sessionId})`**: Generates a list of strings, where each item is on a new line.
+- **`Future<List<String>> generateAlternatives(String prompt, {String? sessionId, int count})`**: Generates a specified number of variations for a given text.
+- **`Future<String?> summarizeText(String text, {String? sessionId, SummarizationStyle style})`**: Summarizes a piece of text in a specific style.
+- **`Future<Map<String, dynamic>> extractInformation(String text, {String? sessionId, List<String>? fields})`**: Extracts specific fields from text into a JSON object.
+- **`Future<Map<String, double>> classifyText(String text, {String? sessionId, List<String>? categories})`**: Classifies text against a list of categories and returns confidence scores.
+- **`Future<List<String>> generateSuggestions(String context, {String? sessionId, int maxSuggestions})`**: Provides contextual suggestions.
 
-#### `getPlatformVersion()`
+### Generation Methods (Streaming)
 
-Gets the current platform version.
-
-- **Returns**: `Future<String?>` - Platform version string
+- **`Stream<String> generateTextStream(String prompt, {String? sessionId, ...})`**: Streams generated text as a series of chunks.
+- **`Stream<String> getStructuredDataStream(String prompt, {String? sessionId})`**: Streams a complete JSON object as a raw string. The stream will emit the full string in one or more chunks.
 
 ## Error Handling
 
-The plugin provides comprehensive error handling. It's recommended to wrap API calls in a `try-catch` block to handle potential `PlatformException` errors.
+The plugin uses `AppleFoundationException` for errors. It's best to wrap API calls in a `try-catch` block.
 
 ```dart
 try {
-  final result = await appleFoundationFlutter.getStructuredData('Generate data');
-  // Handle success
-} on PlatformException catch (e) {
+  final result = await _plugin.generateText('Hello!');
+} on AppleFoundationException catch (e) {
+  print('Error Code: ${e.code}');
+  print('Message: ${e.message}');
+  // e.g., 'UNSUPPORTED_OS_VERSION', 'MODEL_NOT_READY', etc.
   switch (e.code) {
-    // General errors
-    case 'INVALID_ARGUMENTS':
-      print('Invalid arguments provided');
-      break;
-    case 'GENERATION_ERROR':
-      print('Error during generation: ${e.message}');
-      break;
-    case 'ENCODING_ERROR':
-      print('Error encoding response');
-      break;
-    
-    // Availability errors
-    case 'UNSUPPORTED_OS':
-      print('This feature is only available on iOS.');
-      break;
-    case 'DEVICE_NOT_ELIGIBLE':
-      print('This device does not support Apple Intelligence.');
-      break;
-    case 'APPLE_INTELLIGENCE_NOT_ENABLED':
-      print('Apple Intelligence is not enabled in settings.');
+    case 'UNSUPPORTED_OS_VERSION':
+      // Handle OS not supported
       break;
     case 'MODEL_NOT_READY':
-      print('The language model is still downloading.');
+      // Inform user the model is downloading
       break;
-    case 'UNAVAILABLE':
-      print('The model is unavailable for an unknown reason.');
-      break;
-
-    default:
-      print('Unknown error: ${e.message}');
+    // ... handle other specific error codes
   }
 }
 ```
 
-## Limitations
+### Common Error Codes
 
-- Only available on iOS 18.0 and above
-- Requires devices with Apple Silicon or A-series processors
-- Model availability depends on device capabilities and iOS configuration
-- Processing happens on-device, so performance varies by device
+- **`UNSUPPORTED_OS_VERSION`**: The iOS version is below 18.0.
+- **`DEVICE_NOT_ELIGIBLE`**: The device hardware does not support Apple Intelligence.
+- **`APPLE_INTELLIGENCE_NOT_ENABLED`**: The user has not enabled Apple Intelligence in Settings.
+- **`MODEL_NOT_READY`**: The language model is still downloading or is otherwise not ready.
+- **`TIMEOUT_ERROR`**: The request to the native side timed out.
+- **`GENERATION_ERROR`**: An error occurred within the native model during generation.
+- **`INVALID_ARGUMENTS`**: One of the arguments passed to the method was invalid (e.g., empty prompt).
 
 ## Privacy
 
-This plugin processes all data locally on the device using Apple's Foundation Models framework. No data is transmitted to external servers, ensuring complete privacy and compliance with data protection regulations.
+This plugin processes all data locally on the device using Apple's Foundation Models framework. **No data is transmitted to external servers**, ensuring complete privacy and compliance with data protection regulations.
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
+We welcome contributions! Please see our Contributing Guide for more details.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## References
 

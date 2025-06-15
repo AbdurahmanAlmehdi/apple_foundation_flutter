@@ -1,11 +1,9 @@
-// AppleFoundationFlutterPlugin.swift
-// Full improved implementation
-// Requires: Xcode 17 / iOS 18 SDK (FoundationModels framework)
+
 
 import Flutter
 import UIKit
 
-// Only attempt to import and use FoundationModels if on iOS 18+
+
 #if canImport(FoundationModels)
   import FoundationModels
 #endif
@@ -28,7 +26,7 @@ actor SessionStore {
   }
 
   func cancelAll() {
-    // The sessions will be deallocated and their tasks cancelled automatically.
+
     sessions.removeAll()
   }
 }
@@ -117,7 +115,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
     if let id = id, let existing = await (self.store as? SessionStore)?[id] {
       return existing
     }
-    // If instructions are provided, create a new session with them.
+
     if let instructions = instructions {
       return LanguageModelSession(instructions: instructions)
     }
@@ -155,7 +153,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    // Always handle these basic calls regardless of availability
+
     switch call.method {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
@@ -174,13 +172,13 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
       break
     }
 
-    // For all other methods, first verify that the FoundationModels are available.
+
     if let error = checkAvailability() {
       result(error)
       return
     }
 
-    // We can now safely call methods that require iOS 18.
+
     if #available(iOS 26.0, *) {
       switch call.method {
       case "openSession": openSession(call, result)
@@ -198,7 +196,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
       default: result(FlutterMethodNotImplemented)
       }
     } else {
-      // This should not be reached due to the checkAvailability guard, but is here for safety.
+
       result(
         FlutterError(
           code: "UNSUPPORTED_OS_VERSION",
@@ -363,7 +361,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
     run(
       promptText: promptText, args: dict,
       postProcess: { content in
-        // Attempt to clean up markdown code block
+  
         let cleanedContent =
           content.trimmingCharacters(in: .whitespacesAndNewlines)
           .replacingOccurrences(of: "```json", with: "")
@@ -514,7 +512,12 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
         let raw = try await session.respond(to: prompt, options: opts)
         let output: Any = postProcess?(raw.content) ?? raw.content
         complete(result, with: output)
-      } catch { complete(result, error: FlutterError(code: "RUN_ERROR", message: "Fail to run prompt", details: error.localizedDescription)) }
+      } catch {
+        complete(
+          result,
+          error: FlutterError(
+            code: "RUN_ERROR", message: "Fail to run prompt", details: error.localizedDescription))
+      }
     }
   }
 
