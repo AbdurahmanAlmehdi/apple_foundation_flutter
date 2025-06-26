@@ -1,0 +1,25 @@
+# Exclude example from published package
+example/
+
+# Exclude build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Exclude IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
+
+# Exclude test files (optional - you might want to include them)
+test/
+
+# Exclude documentation that shouldn't be in the package
+**/doc/api/ 
