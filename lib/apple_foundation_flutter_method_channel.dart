@@ -566,7 +566,7 @@ class MethodChannelAppleFoundationFlutter
       } on PlatformException catch (e) {
         throw AppleFoundationException(
           'Platform error in $method: ${e.message}',
-          code: e.code ?? 'PLATFORM_ERROR',
+          code: e.code,
           details: e.details,
         );
       } catch (e) {

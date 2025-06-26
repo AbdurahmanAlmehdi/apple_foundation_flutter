@@ -1,5 +1,5 @@
 name: apple_foundation_flutter
-description: "A new Flutter plugin project."
+description: "A package for interacting with Apple's Foundation framework in Flutter."
 version: 0.0.1
 homepage:
 
