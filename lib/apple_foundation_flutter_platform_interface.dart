@@ -41,37 +41,31 @@ abstract class AppleFoundationFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('openSession() has not been implemented.');
   }
 
-  /// Close an existing session
+
   Future<void> closeSession(String sessionId) {
     throw UnimplementedError('closeSession() has not been implemented.');
   }
 
-  /// Get available model capabilities
-  Future<Map<String, dynamic>> getModelCapabilities() {
-    throw UnimplementedError(
-      'getModelCapabilities() has not been implemented.',
-    );
-  }
 
-  /// Check if Apple Intelligence is available on the device
+
+
+
   Future<bool> isAvailable() {
     throw UnimplementedError('isAvailable() has not been implemented.');
   }
 
-  /// Get the availability status with detailed reason if unavailable
+
   Future<Map<String, dynamic>> getAvailabilityStatus() {
     throw UnimplementedError(
       'getAvailabilityStatus() has not been implemented.',
     );
   }
 
-  /// Generate text with specific constraints (max tokens, temperature, etc.)
+
   Future<String?> generateText(
     String prompt, {
     String? sessionId,
-    int? maxTokens,
-    double? temperature,
-    double? topP,
+
   }) {
     throw UnimplementedError('generateText() has not been implemented.');
   }
@@ -121,9 +115,7 @@ abstract class AppleFoundationFlutterPlatform extends PlatformInterface {
   Stream<String> generateTextStream(
     String prompt, {
     String? sessionId,
-    int? maxTokens,
-    double? temperature,
-    double? topP,
+
   }) {
     throw UnimplementedError('generateTextStream() has not been implemented.');
   }

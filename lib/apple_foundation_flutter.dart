@@ -39,9 +39,7 @@ class AppleFoundationFlutter {
     return AppleFoundationFlutterPlatform.instance.closeSession(sessionId);
   }
 
-  Future<Map<String, dynamic>> getModelCapabilities() {
-    return AppleFoundationFlutterPlatform.instance.getModelCapabilities();
-  }
+
 
   Future<bool> isAvailable() {
     return AppleFoundationFlutterPlatform.instance.isAvailable();
@@ -61,9 +59,7 @@ class AppleFoundationFlutter {
     return AppleFoundationFlutterPlatform.instance.generateText(
       prompt,
       sessionId: sessionId,
-      maxTokens: maxTokens,
-      temperature: temperature,
-      topP: topP,
+
     );
   }
 
@@ -130,16 +126,12 @@ class AppleFoundationFlutter {
   Stream<String> generateTextStream(
     String prompt, {
     String? sessionId,
-    int? maxTokens,
-    double? temperature,
-    double? topP,
+
   }) {
     return AppleFoundationFlutterPlatform.instance.generateTextStream(
       prompt,
       sessionId: sessionId,
-      maxTokens: maxTokens,
-      temperature: temperature,
-      topP: topP,
+
     );
   }
 

@@ -1,6 +1,6 @@
 # Apple Foundation Flutter
 
-A Flutter plugin that provides access to Apple's on-device Foundation Models framework, available on iOS 18.0 and above. This plugin allows you to integrate Apple Intelligence features directly into your Flutter applications, offering powerful, private, and efficient AI capabilities.
+A Flutter plugin that provides access to Apple's on-device Foundation Models framework, available on iOS 26.0 and above. This plugin allows you to integrate Apple Intelligence features directly into your Flutter applications, offering powerful, private, and efficient AI capabilities, currently on ios only but foundations model does work on macos so this will be added in a later update.
 
 ## Features
 
@@ -16,8 +16,7 @@ A Flutter plugin that provides access to Apple's on-device Foundation Models fra
 ## Requirements
 
 - **Platform**: iOS 26.0+
-- **IDE**: Xcode 16.0+
-- **Language**: Swift 5.10+
+- **IDE**: Xcode 26.0+
 - **Flutter**: 3.0+
 
 ## Installation
@@ -26,7 +25,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  apple_foundation_flutter: ^0.0.1
+  apple_foundation_flutter: ^0.1.1
 ```
 
 Then run:
@@ -35,86 +34,107 @@ Then run:
 flutter pub get
 ```
 
-Finally, run `flutter pub get`.
-
 ## Usage
 
-### 1. Initialize the Plugin
+You can use this plugin in two ways:
+
+### 1. Using AppleIntelligenceSession (Recommended)
+
+The session class provides a more object-oriented approach with automatic session management:
 
 ```dart
 import 'package:apple_foundation_flutter/apple_foundation_flutter.dart';
 
-final _plugin = AppleFoundationFlutter();
+// Create a new session
+final session = await AppleIntelligenceSession.create(
+  'You are a helpful AI assistant that provides concise responses.',
+);
+
+try {
+
+  final response = await session.ask('What is quantum computing?');
+  print(response);
+
+  // Generate structured data
+  final data = await session.getStructuredData(
+    'Create a profile for a quantum computer scientist',
+  );
+  print(data);
+
+  // Stream responses
+  await for (final chunk in session.generateTextStream('Tell me a story')) {
+    print(chunk); // Process each chunk as it arrives
+  }
+} finally {
+  // Always close the session when done
+  await session.close();
+}
 ```
 
-### 2. Check for Availability
-
-Before using any model features, always check if they are available on the device.
+You can create multiple independent sessions:
 
 ```dart
-final bool isAvailable = await _plugin.isAvailable();
+// Create two sessions with different contexts
+final techSession = await AppleIntelligenceSession.create(
+  'You are a technical expert in computer science.',
+);
+final storySession = await AppleIntelligenceSession.create(
+  'You are a creative storyteller.',
+);
+
+// Use them independently
+final techResponse = await techSession.ask('Explain APIs');
+final storyResponse = await storySession.ask('Tell me a short story');
+
+// Close both sessions when done
+await techSession.close();
+await storySession.close();
+```
+
+### 2. Using the Plugin Directly
+
+If you prefer to manage sessions yourself or need more direct control:
+
+```dart
+import 'package:apple_foundation_flutter/apple_foundation_flutter.dart';
+
+final plugin = AppleFoundationFlutter();
+
+// Check availability
+final bool isAvailable = await plugin.isAvailable();
 if (!isAvailable) {
-  // Handle cases where Apple Intelligence is not available
-  final status = await _plugin.getAvailabilityStatus();
+  final status = await plugin.getAvailabilityStatus();
   print('Apple Intelligence is not available: ${status['reason']}');
   return;
 }
-```
 
-### 3. Generate Text (Streaming)
-
-For dynamic and responsive UI, stream text generation.
-
-```dart
-String streamedResponse = '';
-final textStream = _plugin.generateTextStream(
-  'Tell me a short story about a brave knight.',
+// Create a session manually
+final sessionId = await plugin.openSession(
+  'You are a helpful assistant.',
 );
 
-await for (final chunk in textStream) {
-  setState(() {
+try {
+  // Use the session ID in calls
+  final response = await plugin.generateText(
+    'What is machine learning?',
+    sessionId: sessionId,
+  );
+  print(response);
+
+  // Stream responses
+  String streamedResponse = '';
+  final textStream = plugin.generateTextStream(
+    'Tell me a story about AI',
+    sessionId: sessionId,
+  );
+
+  await for (final chunk in textStream) {
     streamedResponse += chunk;
-  });
+  }
+} finally {
+  // Clean up the session
+  await plugin.closeSession(sessionId);
 }
-```
-
-### 4. Generate Structured Data (Streaming)
-
-You can also stream structured data, which is useful for receiving a complete JSON object once it's fully generated.
-
-```dart
-String rawJson = '';
-final jsonStream = _plugin.getStructuredDataStream(
-  'Create a user profile for Jane Doe, a 32-year-old astronaut.',
-);
-
-await for (final chunk in jsonStream) {
-  rawJson += chunk;
-}
-// Once the stream is complete, parse the JSON
-final data = json.decode(rawJson);
-print(data); // { "name": "Jane Doe", "age": 32, "occupation": "astronaut" }
-```
-
-### 5. Using Sessions for Context
-
-Sessions allow the model to remember previous parts of a conversation.
-
-```dart
-// Start a new session with system instructions
-final sessionId = await _plugin.openSession(
-  'You are a helpful and friendly assistant.',
-);
-
-// Use the session ID in subsequent calls
-final response = await _plugin.generateText(
-  'What was the first thing I asked you?',
-  sessionId: sessionId,
-);
-
-// Remember to close the session when done
-await _plugin.closeSession(sessionId);
-
 ```
 
 ## API Reference
@@ -123,7 +143,6 @@ await _plugin.closeSession(sessionId);
 
 - **`Future<bool> isAvailable()`**: Checks if Apple Intelligence is supported and enabled.
 - **`Future<Map<String, dynamic>> getAvailabilityStatus()`**: Gets a detailed status, including a reason if unavailable.
-- **`Future<Map<String, dynamic>> getModelCapabilities()`**: Returns a map of the current model's capabilities.
 - **`Future<String?> getPlatformVersion()`**: Gets the underlying iOS version.
 
 ### Session Management
@@ -156,7 +175,8 @@ The plugin uses `AppleFoundationException` for errors. It's best to wrap API cal
 
 ```dart
 try {
-  final result = await _plugin.generateText('Hello!');
+  final session = await AppleIntelligenceSession.create('You are a helpful assistant');
+  final result = await session.generateText('Hello!');
 } on AppleFoundationException catch (e) {
   print('Error Code: ${e.code}');
   print('Message: ${e.message}');
@@ -175,7 +195,7 @@ try {
 
 ### Common Error Codes
 
-- **`UNSUPPORTED_OS_VERSION`**: The iOS version is below 18.0.
+- **`UNSUPPORTED_OS_VERSION`**: The iOS version is below 26.0.
 - **`DEVICE_NOT_ELIGIBLE`**: The device hardware does not support Apple Intelligence.
 - **`APPLE_INTELLIGENCE_NOT_ENABLED`**: The user has not enabled Apple Intelligence in Settings.
 - **`MODEL_NOT_READY`**: The language model is still downloading or is otherwise not ready.

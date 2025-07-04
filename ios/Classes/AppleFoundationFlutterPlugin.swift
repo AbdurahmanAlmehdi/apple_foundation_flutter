@@ -1,8 +1,5 @@
-
-
 import Flutter
 import UIKit
-
 
 #if canImport(FoundationModels)
   import FoundationModels
@@ -125,11 +122,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
   @available(iOS 26.0, *)
   public func options(from args: [String: Any]) -> GenerationOptions? {
     var opts = GenerationOptions()
-    if let max = args["maxTokens"] as? Int { opts.maximumResponseTokens = max }
-    if let temp = args["temperature"] as? Double { opts.temperature = temp }
-    if let topP = args["topP"] as? Double {
-      opts.sampling = .random(probabilityThreshold: topP)
-    }
+
     return opts
   }
 
@@ -172,18 +165,16 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
       break
     }
 
-
     if let error = checkAvailability() {
       result(error)
       return
     }
 
-
     if #available(iOS 26.0, *) {
       switch call.method {
       case "openSession": openSession(call, result)
       case "closeSession": closeSession(call, result)
-      case "getModelCapabilities": getCapabilities(result)
+
       case "ask": ask(call, result)
       case "generateText": generateText(call, result)
       case "generateAlternatives": generateAlternatives(call, result)
@@ -243,20 +234,6 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
         complete(result, with: nil)
       }
     }
-  }
-
-  @available(iOS 26.0, *)
-  private func getCapabilities(_ result: @escaping FlutterResult) {
-    let model = SystemLanguageModel.default
-    let caps: [String: Any] = [
-      "maxInputTokens": 8192,
-      "maxOutputTokens": 4096,
-      "supportedLanguages": model.supportedLanguages.map { $0.languageCode },
-      "supportsStreaming": true,
-      "supportsToolCalling": true,
-      "version": "26.0",
-    ]
-    result(caps)
   }
 
   @available(iOS 26.0, *)
@@ -361,7 +338,7 @@ public final class AppleFoundationFlutterPlugin: NSObject, FlutterPlugin {
     run(
       promptText: promptText, args: dict,
       postProcess: { content in
-  
+
         let cleanedContent =
           content.trimmingCharacters(in: .whitespacesAndNewlines)
           .replacingOccurrences(of: "```json", with: "")
