@@ -1,6 +1,6 @@
 name: apple_foundation_flutter
 description: "A package for interacting with Apple's Foundation framework in Flutter."
-version: 0.1.1
+version: 0.1.0
 homepage: https://github.com/AbdurahmanAlmehdi/apple_foundation_flutter
 
 environment:

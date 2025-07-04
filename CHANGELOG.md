@@ -1,4 +1,4 @@
-## 0.1.1
+## 0.1.0
 
 * Added `AppleIntelligenceSession` class for better session management
 * Updated iOS requirements to iOS 26.0+
