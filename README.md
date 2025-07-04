@@ -202,6 +202,16 @@ try {
 - **`TIMEOUT_ERROR`**: The request to the native side timed out.
 - **`GENERATION_ERROR`**: An error occurred within the native model during generation.
 - **`INVALID_ARGUMENTS`**: One of the arguments passed to the method was invalid (e.g., empty prompt).
+- **`RUN_ERROR`**: Failed to run the prompt, often due to missing resources. This commonly occurs when:
+  - The model resources are still downloading
+  - The Local Sanitizer Asset is not yet available
+  - Incompatible Verions of xcode
+  - The device is low on storage space
+  - The model was recently installed and is still initializing
+
+### Handling Resource Availability
+
+When you first install the app or update to a new iOS version, Apple's Foundation Models framework may need to download additional resources, if you have MacOS 26 beta 2, make sure you are using Xcode 26 beta 2 aswell. If not you might encounter `RUN_ERROR` or `MODEL_NOT_READY` errors.
 
 ## Privacy
 
