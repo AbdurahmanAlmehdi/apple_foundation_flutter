@@ -1,6 +1,49 @@
 # Apple Foundation Flutter
 
-A Flutter plugin that provides access to Apple's on-device Foundation Models framework, available on iOS 26.0 and above. This plugin allows you to integrate Apple Intelligence features directly into your Flutter applications, offering powerful, private, and efficient AI capabilities, currently on ios only but foundations model does work on macos so this will be added in a later update.
+> **⚠️ NOTICE: This package has been succeeded by [`native_ai_bridge`](https://pub.dev/packages/native_ai_bridge)**
+>
+> While `apple_foundation_flutter` remains available on pub.dev for existing users, all new development and features are being added to `native_ai_bridge`. We recommend migrating to the new package for:
+> - Active development and updates
+> - New features and improvements
+> - Bug fixes and security patches
+> - Better documentation and examples
+>
+> **Migration is simple** - just update your imports! See the [Migration Guide](#migration-to-native_ai_bridge) below.
+
+---
+
+A Flutter plugin that provides access to Apple's on-device Foundation Models framework, available on iOS 26.0 and above. This plugin allows you to integrate Apple Intelligence features directly into your Flutter applications, offering powerful, private, and efficient AI capabilities.
+
+**Note**: Currently iOS only, but since Foundation Models works on macOS, support will be added in a future update.
+
+## Migration to native_ai_bridge
+
+### Quick Migration (3 steps)
+
+1. **Update pubspec.yaml:**
+```yaml
+dependencies:
+  # apple_foundation_flutter: ^0.1.1  # Remove this
+  native_ai_bridge: ^0.1.0             # Add this
+```
+
+2. **Update imports in your Dart files:**
+```dart
+// OLD
+import 'package:apple_foundation_flutter/apple_foundation_flutter.dart';
+
+// NEW
+import 'package:native_ai_bridge/native_ai_bridge.dart';
+```
+
+3. **Run:**
+```bash
+flutter pub get
+```
+
+That's it! Your code will work exactly the same. See the [full migration guide](https://github.com/AbdurahmanAlmehdi/native_ai_bridge_library/blob/main/MIGRATION.md) for more details.
+
+---
 
 ## Features
 
@@ -9,6 +52,7 @@ A Flutter plugin that provides access to Apple's on-device Foundation Models fra
 - **Streaming Support**: Stream text and structured JSON responses in real-time for a dynamic UX.
 - **Structured Data**: Generate structured data (e.g., JSON) from natural language prompts.
 - **Session Management**: Maintain conversation history and context with sessions.
+- **Tool Calling**: Extend the model with custom tools for fetching data, performing actions, and integrating with frameworks.
 - **Advanced Control**: Fine-tune model output with parameters like temperature, token limits, and more.
 - **Helper Functions**: Includes specialized methods for summarization, classification, alternative generation, and information extraction.
 - **Availability Checks**: Gracefully check if Apple Intelligence is available on the user's device.
@@ -21,11 +65,18 @@ A Flutter plugin that provides access to Apple's on-device Foundation Models fra
 
 ## Installation
 
-Add this to your package's `pubspec.yaml` file:
+### Using apple_foundation_flutter (Legacy)
 
 ```yaml
 dependencies:
   apple_foundation_flutter: ^0.1.1
+```
+
+### Using native_ai_bridge (Recommended)
+
+```yaml
+dependencies:
+  native_ai_bridge: ^0.1.0
 ```
 
 Then run:
@@ -36,7 +87,10 @@ flutter pub get
 
 ## Usage
 
-You can use this plugin in two ways:
+> **Note**: The examples below use `apple_foundation_flutter` package name. If you're using `native_ai_bridge`, simply replace the import statement:
+> ```dart
+> import 'package:native_ai_bridge/native_ai_bridge.dart';
+> ```
 
 ### 1. Using AppleIntelligenceSession (Recommended)
 
@@ -51,7 +105,6 @@ final session = await AppleIntelligenceSession.create(
 );
 
 try {
-
   final response = await session.ask('What is quantum computing?');
   print(response);
 
@@ -169,6 +222,10 @@ These methods return a complete response after generation is finished.
 - **`Stream<String> generateTextStream(String prompt, {String? sessionId, ...})`**: Streams generated text as a series of chunks.
 - **`Stream<String> getStructuredDataStream(String prompt, {String? sessionId})`**: Streams a complete JSON object as a raw string. The stream will emit the full string in one or more chunks.
 
+## Tool Calling
+
+> **Note**: Tool calling is available in `native_ai_bridge` with enhanced features and a code generator. See the [native_ai_bridge README](https://pub.dev/packages/native_ai_bridge) for full documentation.
+
 ## Error Handling
 
 The plugin uses `AppleFoundationException` for errors. It's best to wrap API calls in a `try-catch` block.
@@ -205,21 +262,46 @@ try {
 - **`RUN_ERROR`**: Failed to run the prompt, often due to missing resources. This commonly occurs when:
   - The model resources are still downloading
   - The Local Sanitizer Asset is not yet available
-  - Incompatible Verions of xcode
+  - Incompatible versions of Xcode
   - The device is low on storage space
   - The model was recently installed and is still initializing
 
 ### Handling Resource Availability
 
-When you first install the app or update to a new iOS version, Apple's Foundation Models framework may need to download additional resources, if you have MacOS 26 beta 2, make sure you are using Xcode 26 beta 2 aswell. If not you might encounter `RUN_ERROR` or `MODEL_NOT_READY` errors.
+When you first install the app or update to a new iOS version, Apple's Foundation Models framework may need to download additional resources. If you have macOS 26 beta 2, make sure you are using Xcode 26 beta 2 as well. If not, you might encounter `RUN_ERROR` or `MODEL_NOT_READY` errors.
 
 ## Privacy
 
 This plugin processes all data locally on the device using Apple's Foundation Models framework. **No data is transmitted to external servers**, ensuring complete privacy and compliance with data protection regulations.
 
+## Package Status & Support
+
+### apple_foundation_flutter (This Package)
+- **Status**: Stable, no longer in active development
+- **Latest Version**: 0.1.1
+- **Support**: Critical bug fixes only
+- **Recommendation**: Migrate to `native_ai_bridge` for new features
+
+### native_ai_bridge (Successor Package)
+- **Status**: Active development
+- **Latest Version**: 0.1.0+
+- **Support**: Full support with regular updates
+- **Features**: Everything in this package plus:
+  - Code generator for Tool classes
+  - Comprehensive test coverage
+  - Enhanced documentation
+  - Future platform support (macOS coming soon)
+
+## Migration Resources
+
+- **Migration Guide**: [MIGRATION.md](https://github.com/AbdurahmanAlmehdi/native_ai_bridge/blob/main/MIGRATION.md)
+- **native_ai_bridge Package**: [pub.dev/packages/native_ai_bridge](https://pub.dev/packages/native_ai_bridge)
+- **GitHub Repository**: [github.com/AbdurahmanAlmehdi/native_ai_bridge_library](https://github.com/AbdurahmanAlmehdi/native_ai_bridge_library)
+- **Issues & Support**: [GitHub Issues](https://github.com/AbdurahmanAlmehdi/native_ai_bridge_library/issues)
+
 ## Contributing
 
-We welcome contributions! Please see our Contributing Guide for more details.
+Contributions are welcome! However, please direct new contributions to the [`native_ai_bridge`](https://github.com/AbdurahmanAlmehdi/native_ai_bridge_library) repository.
 
 ## License
 
@@ -229,3 +311,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [Apple Foundation Models Documentation](https://developer.apple.com/documentation/foundationmodels)
 - [Flutter Plugin Development](https://docs.flutter.dev/packages-and-plugins/developing-packages)
+- [native_ai_bridge Package](https://pub.dev/packages/native_ai_bridge)
