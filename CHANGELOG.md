@@ -1,3 +1,8 @@
+## 0.1.1
+
+* Deprecated: This plugin has been replaced by `native_ai_bridge`.
+* Added deprecation notice to README and provided a migration guide to help users transition to `native_ai_bridge`.
+
 ## 0.1.0
 
 * Added `AppleIntelligenceSession` class for better session management
